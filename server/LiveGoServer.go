@@ -1,8 +1,6 @@
 package main
 
 import (
-	"./../config"
-	"./lib/websocket"
 	"crypto/md5"
 	"crypto/rand"
 	"encoding/base64"
@@ -15,6 +13,9 @@ import (
 	"math/big"
 	"net/http"
 	"os"
+
+	"./../config"
+	"./lib/websocket"
 )
 
 type userinfo struct {
@@ -72,7 +73,7 @@ func (m *Client) addclient(ws *websocket.Conn) *Client {
 }
 
 var username string
-var uzb string = ""
+var uzb string
 
 func pwint(ws *websocket.Conn) {
 	defer func() {
@@ -133,11 +134,15 @@ func pwint(ws *websocket.Conn) {
 
 func index(w http.ResponseWriter, r *http.Request) {
 	r.ParseForm()
+	log.Println("index")
+
 	if r.Method == "GET" {
 		t, _ := template.ParseFiles("./views/index.html")
 		t.Execute(w, nil)
 	} else {
+		fmt.Println("post")
 		_, ok := r.Form["name"]
+
 		if ok {
 			username = r.FormValue("name")
 			http.Redirect(w, r, "/live", 301)
@@ -178,14 +183,14 @@ func main() {
 		http.Handle("/chat", websocket.Handler(pwint))
 	}()
 	http.Handle("/public/", http.StripPrefix("/public/", http.FileServer(http.Dir("./public"))))
-	http.HandleFunc("/live", live)
-	http.HandleFunc("/camera", camera)
-	http.Handle("/", http.RedirectHandler("/index", 301))
-	http.HandleFunc("/index", index)
+	http.HandleFunc("/live/", live)
+	http.HandleFunc("/camera/", camera)
+	http.Handle("/", http.RedirectHandler("/index/", 301))
+	http.HandleFunc("/index/", index)
 	var config = config.ServerHost + ":" + config.ServerPort
+	fmt.Println("Live server listening on port", config)
 	if err := http.ListenAndServe(config, nil); err != nil {
 		logger.Println("LiveGoServer:", err)
 		logfile.Close()
 	}
-
 }
